@@ -46,12 +46,8 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center
 
     ) {
-        Text(
-            "Авторизация", fontSize = 32.sp, color = MyTextColor
-        )
-        Text(
-            "пользователя", fontSize = 32.sp, color = MyTextColor
-        )
+        Text("Авторизация", fontSize = 32.sp, color = MyTextColor)
+        Text("пользователя", fontSize = 32.sp, color = MyTextColor)
         Spacer(modifier = Modifier.height(32.dp))
         //  поля регистрации
         OutlinedTextField(
@@ -101,6 +97,9 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             }
 
         }
+        Spacer(modifier = Modifier.height(32.dp))
+        Text("Demo: demo", fontSize = 12.sp, color = MyTextColor)
+        
 
 
     }
