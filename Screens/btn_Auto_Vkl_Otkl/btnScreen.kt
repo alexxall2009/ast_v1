@@ -56,6 +56,26 @@ import com.example.myastjson_v3.ui.theme.DarkText
 import com.example.myastjson_v3.ui.theme.GrayBorder
 import com.example.myastjson_v3.ui.theme.MyBluePrimary
 import com.example.myastjson_v3.ui.theme.MylightGray
+Слабые стороны (серьёзные)
+if (isLoading) {
+    Box(...) {
+        CircularProgressIndicator(...)
+        onBack()   // вызов колбэка внутри композиции!
+    }
+}
+Это вызывает onConfirm() на каждой рекомпозиции, что приводит к множественной отправке команды на ТП. В промышленном приложении это особенно опасно. Должно быть в LaunchedEffect(isLoading) { if (isLoading) { delay(...); onBack() } }
+
+
+2. ModalBottomSheet внутри forEachIndexed — на каждую кнопку создаётся свой ModalBottomSheet с общим showBottomSheet. Будет открываться три экземпляра одновременно (хотя видно один). Sheet нужно вынести за пределы цикла, после Row.
+4. @SuppressLint("RememberReturnType") в SliderThumb — подавление предупреждения вместо исправления. remember(key1 = x0) { ... } пересчитывается на каждое изменение x0 (а оно меняется постоянно во время свайпа) — remember тут бесполезен, можно просто val imageVector = if (x0 < 80) ... else ....
+5. Жёсткий порог >= 80 в магическом числе — должно быть константой private const val CONFIRM_THRESHOLD = 80f.
+7. ButtonDefaults.buttonColors(it.bgColor) — устаревшая сигнатура, новый API: ButtonDefaults.buttonColors(containerColor = it.bgColor).
+8. Дублирование border: указан и через Modifier.border(...), и через параметр border = BorderStroke(...). Один из них лишний.
+9. Логика трека внутри Canvas: actualXStart = width * xStartR — нормализация делается в remember(slideOffset) { slideOffset / 100f }, потом домножается на ширину. Можно убрать remember — это простое деление, не стоит кэширования.
+10. onClickBtn(onClickBtnReturn) — через два промежуточных state. Можно прокинуть индекс прямо в колбэк:
+onClick = { showSheet(it.label, it.Longlabel, index) }
+
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
