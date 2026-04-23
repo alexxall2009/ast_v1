@@ -9,7 +9,65 @@ import androidx.lifecycle.ViewModel
 import com.example.myastjson_v3.ui.theme.BgScreen
 import com.example.myastjson_v3.ui.theme.GrayBorder
 
+import androidx.compose.runtime.mutableStateListOf
+import androidx.lifecycle.ViewModel
 
+enum class ControlMode(val label: String, val longLabel: String) {
+    AUTO("Авто", "Автоматическое управление"),
+    ON("Вкл", "Включение"),
+    OFF("Откл", "Отключение");
+
+    companion object {
+        fun fromLabel(label: String): ControlMode? =
+            entries.firstOrNull { it.label == label }
+    }
+}
+
+data class BtnData(
+    val mode: ControlMode,
+    val isActive: Boolean = false,
+    val hasFocus: Boolean = false,
+) {
+    val label: String get() = mode.label
+    val longLabel: String get() = mode.longLabel
+}
+
+class BtnModel : ViewModel() {
+
+    private val _btn = mutableStateListOf(
+        BtnData(mode = ControlMode.AUTO, isActive = true, hasFocus = true),
+        BtnData(mode = ControlMode.ON),
+        BtnData(mode = ControlMode.OFF),
+    )
+    val btn: List<BtnData> get() = _btn
+
+    fun isActive(mode: ControlMode): Boolean =
+        _btn.firstOrNull { it.mode == mode }?.isActive == true
+
+    fun isHasFocus(mode: ControlMode): Boolean =
+        _btn.firstOrNull { it.mode == mode }?.hasFocus == true
+
+    fun onClickAction(mode: ControlMode) {
+        setActive(mode)
+    }
+
+    private fun setActive(target: ControlMode) {
+        for (i in _btn.indices) {
+            val isTarget = _btn[i].mode == target
+            _btn[i] = _btn[i].copy(isActive = isTarget, hasFocus = isTarget)
+        }
+    }
+
+    fun reset() {
+        for (i in _btn.indices) {
+            _btn[i] = _btn[i].copy(isActive = false, hasFocus = false)
+        }
+    }
+}
+
+
+
+/*
 data class BtnDate(
     val label: String = "",
     val Longlabel: String = "",
@@ -90,3 +148,4 @@ class BtnModel : ViewModel() {
 
 
 }
+*/
