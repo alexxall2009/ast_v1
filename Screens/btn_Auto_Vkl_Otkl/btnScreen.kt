@@ -56,6 +56,282 @@ import com.example.myastjson_v3.ui.theme.DarkText
 import com.example.myastjson_v3.ui.theme.GrayBorder
 import com.example.myastjson_v3.ui.theme.MyBluePrimary
 import com.example.myastjson_v3.ui.theme.MylightGray
+
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.myastjson_v3.ui.theme.BgScreen
+import com.example.myastjson_v3.ui.theme.BluePrimary
+import com.example.myastjson_v3.ui.theme.DarkText
+import com.example.myastjson_v3.ui.theme.GrayBorder
+import com.example.myastjson_v3.ui.theme.MyBluePrimary
+import com.example.myastjson_v3.ui.theme.MylightGray
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+private const val CONFIRM_THRESHOLD = 80f
+private const val SLIDER_MAX = 100f
+private const val LOADING_DELAY_MS = 600L
+private val BUTTON_SHAPE = RoundedCornerShape(50.dp)
+private val SHEET_BG = Color(0xFFF5F5F5)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ControlBtnScreen(
+    btn: BtnModel = viewModel(),
+    onClickBtn: (Int) -> Unit,
+) {
+    var pendingMode by remember { mutableStateOf<ControlMode?>(null) }
+    var pendingIndex by remember { mutableStateOf(0) }
+    val sheetState = rememberModalBottomSheetState()
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(BgScreen),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        btn.btn.forEachIndexed { index, data ->
+            val focused = btn.isHasFocus(data.mode)
+            val active = btn.isActive(data.mode)
+
+            Button(
+                onClick = {
+                    pendingMode = data.mode
+                    pendingIndex = index
+                },
+                modifier = Modifier
+                    .height(56.dp)
+                    .then(if (focused) Modifier.padding(2.dp) else Modifier),
+                shape = BUTTON_SHAPE,
+                border = BorderStroke(1.dp, GrayBorder),
+                colors = ButtonDefaults.buttonColors(containerColor = BgScreen),
+            ) {
+                Text(
+                    text = data.label,
+                    color = if (active) BluePrimary else DarkText,
+                    fontSize = 14.sp,
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+        }
+    }
+
+    val mode = pendingMode
+    if (mode != null) {
+        ModalBottomSheet(
+            onDismissRequest = { pendingMode = null },
+            sheetState = sheetState,
+            containerColor = SHEET_BG,
+            tonalElevation = 10.dp,
+        ) {
+            ConfirmationPanel(
+                setPoint = mode.longLabel,
+                onConfirm = {
+                    btn.onClickAction(mode)
+                    onClickBtn(pendingIndex)
+                    pendingMode = null
+                },
+                onDismiss = { pendingMode = null },
+            )
+        }
+    }
+}
+
+@Composable
+fun ConfirmationPanel(
+    setPoint: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var slideOffset by remember { mutableFloatStateOf(0f) }
+    var isLoading by remember { mutableStateOf(false) }
+    var confirmed by remember { mutableStateOf(false) }
+
+    val animatedValue by animateFloatAsState(
+        targetValue = slideOffset,
+        animationSpec = tween(durationMillis = 60),
+        label = "sliderAnimation",
+    )
+
+    LaunchedEffect(isLoading) {
+        if (isLoading && !confirmed) {
+            delay(LOADING_DELAY_MS)
+            confirmed = true
+            onConfirm()
+        }
+    }
+
+    Box(modifier = Modifier.padding(20.dp)) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("Подтверждение: $setPoint")
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Slider(
+                value = animatedValue,
+                onValueChange = { newValue ->
+                    if (!isLoading) slideOffset = newValue
+                },
+                valueRange = 0f..SLIDER_MAX,
+                onValueChangeFinished = {
+                    if (slideOffset >= CONFIRM_THRESHOLD) {
+                        slideOffset = SLIDER_MAX
+                        isLoading = true
+                    } else {
+                        slideOffset = 0f
+                    }
+                },
+                track = {
+                    SliderTrack(
+                        slideOffset = animatedValue,
+                        isLoading = isLoading,
+                    )
+                },
+                thumb = { SliderThumb(slideOffset) },
+            )
+
+            Spacer(modifier = Modifier.height(13.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                if (!isLoading) {
+                    Button(onClick = onDismiss) {
+                        Text("Отмена")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SliderThumb(value: Float) {
+    val imageVector = if (value < CONFIRM_THRESHOLD) {
+        Icons.Filled.KeyboardArrowRight
+    } else {
+        Icons.Default.Check
+    }
+
+    Box(
+        modifier = Modifier
+            .size(60.dp)
+            .clip(CircleShape)
+            .background(MyBluePrimary),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = imageVector,
+            tint = Color.White,
+            contentDescription = null,
+            modifier = Modifier.size(40.dp),
+        )
+    }
+}
+
+@Composable
+fun SliderTrack(
+    slideOffset: Float,
+    isLoading: Boolean,
+) {
+    val xStartRatio = (slideOffset / SLIDER_MAX).coerceIn(0f, 1f)
+    val textColor = if (isLoading) Color.White else Color.Black
+    val textLabel = if (isLoading) "Подтверждение ..." else "Подтверждение "
+
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(40.dp)
+            .clip(RoundedCornerShape(40.dp)),
+    ) {
+        val width = size.width
+        val height = size.height
+        val filledWidth = width * xStartRatio
+
+        drawRoundRect(
+            color = MylightGray,
+            size = Size(width, height),
+            cornerRadius = CornerRadius(50f, 50f),
+        )
+        drawRoundRect(
+            color = MyBluePrimary,
+            size = Size(filledWidth, height),
+            cornerRadius = CornerRadius(50f, 50f),
+        )
+    }
+
+    Row(
+        modifier = Modifier.offset(x = 60.dp, y = 0.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = textLabel,
+            color = textColor,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 7.dp),
+        )
+        if (isLoading) {
+            Spacer(modifier = Modifier.width(8.dp))
+            CircularProgressIndicator(
+                modifier = Modifier.size(28.dp),
+                color = Color.White,
+                strokeWidth = 3.dp,
+            )
+        }
+    }
+}
+
+/*
 Слабые стороны (серьёзные)
 if (isLoading) {
     Box(...) {
@@ -312,3 +588,4 @@ fun SliderTrack(
         }
     }
 }
+*/
