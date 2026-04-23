@@ -6,3 +6,36 @@
     isHasFocus возвращает не то поле.
     ModalBottomSheet вынести из цикла.
     Заменить строковые ключи на enum.
+######################################################
+
+Сделаю рефакторенные версии обоих файлов с исправлением всех критичных багов.
+
+Готово. Рефакторенные файлы лежат в attached_assets/refactored/BtnModel.kt и attached_assets/refactored/btnScreen.kt.
+
+Что исправлено:
+
+BtnModel.kt:
+
+    enum ControlMode вместо магических строк
+    mutableStateListOf — теперь Compose видит изменения
+    Приватный backing field _btn, наружу только List
+    Один универсальный setActive(target) вместо трёх дублирующих методов
+    Убран неработающий updateBtn(), добавлен корректный reset()
+    Исправлен isHasFocus (теперь возвращает hasFocus, а не isActive)
+    Убраны Compose-зависимости (Color, Shape) из ViewModel
+
+btnScreen.kt:
+
+    🔴 главное: onConfirm() теперь в LaunchedEffect(isLoading) с delay — не отправляет команду на каждой рекомпозиции
+    ModalBottomSheet вынесен из цикла forEachIndexed (был один общий showBottomSheet на 3 экземпляра sheet)
+    Состояние подтверждения через pendingMode: ControlMode? — компактнее и типобезопасно
+    Убран @SuppressLint и бесполезный remember(key1 = x0) в SliderThumb
+    Добавлен флаг confirmed, чтобы onConfirm гарантированно вызвался один раз
+    Слайдер блокируется во время загрузки (if (!isLoading) slideOffset = newValue)
+    Магические числа вынесены в константы (CONFIRM_THRESHOLD, SLIDER_MAX, LOADING_DELAY_MS)
+    Убрано дублирование border (был и в Modifier.border, и в BorderStroke)
+    Современная сигнатура ButtonDefaults.buttonColors(containerColor = ...)
+    coerceIn(0f, 1f) на нормализации — защита от выхода за границы
+    Убран лишний внешний Box с border вокруг thumb (визуально не виден из-за заливки)
+
+Скопируйте содержимое файлов в свой Android Studio проект — пути импортов под ваш package (com.example.myastjson_v3) уже сохранены.
