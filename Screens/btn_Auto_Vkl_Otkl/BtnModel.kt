@@ -23,15 +23,20 @@ data class BtnDate(
     )
 
 
+Магические строки "Авто"/"Вкл"/"Откл" — повторяются везде, легко опечататься. Нужен enum class Mode { AUTO, ON, OFF } с label как полем.
+
+Индексы btn[0]/btn[1]/btn[2] — хрупкая привязка к порядку. Если кто-то поменяет порядок в списке, всё сломается молча. Лучше искать по enum/id.
+
+
 class BtnModel : ViewModel() {
 
-    val btn = mutableListOf(
+    val btn = mutableStateListOf( // так нужно
         BtnDate(label = "Авто", Longlabel = "Автоматическое управление", isActive = true, hasFocus = true),
         BtnDate(label = "Вкл", Longlabel = "Включение", isActive = false, hasFocus = false),
         BtnDate(label = "Откл", Longlabel = "Отключение", isActive = false, hasFocus = false)
     )
 
-    fun updateBtn() {
+    fun updateBtn() { нужно переделать, нужно ли оно вообще?
         btn.forEach {
             it.isActive == false
             it.hasFocus == false
@@ -67,14 +72,14 @@ class BtnModel : ViewModel() {
     }
 
     fun setActiveAvto(){
-        btn[0] = btn[0].copy(isActive = true, hasFocus = true);
-        btn[1] = btn[1].copy(isActive = false, hasFocus = false);
+        btn[0] = btn[0].copy(isActive = true, hasFocus = true)
+        btn[1] = btn[1].copy(isActive = false, hasFocus = false)
         btn[2] = btn[2].copy(isActive = false, hasFocus = false)
 
     }
     fun setActiveVkl(){
-        btn[0] = btn[0].copy(isActive = false, hasFocus = false);
-        btn[1] = btn[1].copy(isActive = true, hasFocus = true);
+        btn[0] = btn[0].copy(isActive = false, hasFocus = false)
+        btn[1] = btn[1].copy(isActive = true, hasFocus = true)
         btn[2] = btn[2].copy(isActive = false, hasFocus = false)
     }
     fun setActiveOtkl(){
